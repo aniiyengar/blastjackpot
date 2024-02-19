@@ -10,11 +10,13 @@ contract BlastJackpot {
     );
 
     function roll() payable public returns (string memory) {
-        // the minimum roll is 0.005 ether
-        require(msg.value >= 0.005 ether, "Minimum roll is 0.005 ether");
+        uint256 amountLessFees = msg.value * 100 / 105;
 
-        uint256 potentialWinnings = msg.value + (msg.value * 99) / 100;
-        uint256 jackpot = msg.value + (address(this).balance - msg.value) * 9 / 10;
+        // the minimum roll is 0.005 ether
+        require(amountLessFees >= 0.005 ether, "Minimum roll is 0.005 ether");
+
+        uint256 potentialWinnings = amountLessFees * 2;
+        uint256 jackpot = address(this).balance;
 
         // if the contract doesn't have funds to pay a winner 1.99x,
         // we roll a 100-sided die. If it lands on 1, the player wins the jackpot.
@@ -23,7 +25,7 @@ contract BlastJackpot {
             // generate a random number between 0 and 100 inclusive
             uint256 randomNumber = uint256(
                 keccak256(abi.encodePacked(block.timestamp, block.prevrandao))
-            ) % 100;
+            ) % 1000;
 
             if (randomNumber == 1) {
                 emit Result("jackpot", jackpot);
@@ -41,13 +43,13 @@ contract BlastJackpot {
             // generate a random number between 0 and 199 inclusive
             uint256 randomNumber = uint256(
                 keccak256(abi.encodePacked(block.timestamp, block.prevrandao))
-            ) % 200;
+            ) % 2000;
 
             if (randomNumber == 1) {
                 emit Result("jackpot", jackpot);
                 payable(msg.sender).transfer(jackpot);
                 return "jackpot";
-            } else if (randomNumber <= 100) {
+            } else if (randomNumber <= 1000) {
                 emit Result("doubled", potentialWinnings);
                 payable(msg.sender).transfer(potentialWinnings);
                 return "doubled";
