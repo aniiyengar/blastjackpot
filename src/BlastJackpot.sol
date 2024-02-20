@@ -18,11 +18,7 @@ contract BlastJackpot {
         uint256 potentialWinnings = amountLessFees * 2;
         uint256 jackpot = address(this).balance;
 
-        // if the contract doesn't have funds to pay a winner 1.99x,
-        // we roll a 100-sided die. If it lands on 1, the player wins the jackpot.
-        // Otherwise, they get rugged.
         if (address(this).balance < potentialWinnings) {
-            // generate a random number between 0 and 100 inclusive
             uint256 randomNumber = uint256(
                 keccak256(abi.encodePacked(block.timestamp, block.prevrandao))
             ) % 1000;
@@ -35,12 +31,7 @@ contract BlastJackpot {
                 emit Result("rugged", 0);
                 return "rugged";
             }
-
-        // if the contract has enough funds to pay a winner 1.99x,
-        // we roll a 200-sided die. If it lands on 1, the player wins the jackpot.
-        // If it lands on 2-100, the player wins 1.99x. Otherwise, they get rugged.
         } else {
-            // generate a random number between 0 and 199 inclusive
             uint256 randomNumber = uint256(
                 keccak256(abi.encodePacked(block.timestamp, block.prevrandao))
             ) % 2000;
