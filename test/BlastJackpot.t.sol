@@ -13,6 +13,6 @@ contract BlastJackpotTest is Test {
 
     function test_roll() public {
       hoax(0x4C5F8Fe7B48ff73f54242e70337221cFD74FD44b, 100 ether);
-      blastJackpot.roll{value: 0.005 ether}();
+      blastJackpot.flipETH{value: 0.005 ether}();
     }
 }
