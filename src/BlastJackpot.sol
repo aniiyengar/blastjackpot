@@ -47,6 +47,42 @@ contract BlastJackpot is Ownable {
         IERC20(tokenAddress).transfer(msg.sender, amount);
     }
 
+    function flip(
+        uint256 flipAmount,
+        uint256 rollMaximum,
+        uint256 balance,
+        uint256 jackpotAmount
+    ) internal view returns (uint256 returnedAmount, string memory resultType) {
+        // If we don't have the funds to pay out a 2x win, we just roll
+        // for a jackpot
+        if (balance < flipAmount) {
+            uint256 randomNumber = rollNumber(rollMaximum / 2);
+
+            if (randomNumber == 1) {
+                resultType = "jackpot";
+                returnedAmount = jackpotAmount;
+            } else {
+                resultType = "rugged";
+                returnedAmount = 0;
+            }
+        } else {
+            uint256 randomNumber = rollNumber(rollMaximum);
+
+            if (randomNumber == 1) {
+                resultType = "jackpot";
+                returnedAmount = jackpotAmount;
+            } else if (randomNumber <= rollMaximum / 2) {
+                resultType = "doubled";
+                returnedAmount = flipAmount * 2;
+            } else {
+                resultType = "rugged";
+                returnedAmount = 0;
+            }
+        }
+
+        return (returnedAmount, resultType);
+    }
+
     //// MAIN FUNCTIONS //////////////////////////////////////////////////////////
     constructor() Ownable(msg.sender);
 
@@ -56,30 +92,17 @@ contract BlastJackpot is Ownable {
         // the minimum roll is 0.005 ether
         require(amountLessFees >= 0.005 ether, "Minimum roll is 0.005 ether");
 
-        uint256 potentialWinnings = amountLessFees * 2;
-        uint256 jackpot = getJackpotETH();
+        (returnedAmount, resultType) = flip(
+            potentialWinnings,
+            100000,
+            address(this).balance,
+            getJackpotETH()
+        );
 
-        if (address(this).balance < potentialWinnings) {
-            uint256 randomNumber = rollNumber(10000);
+        emit ResultETH(resultType, returnedAmount);
 
-            if (randomNumber == 69) {
-                emit ResultETH("jackpot", jackpot);
-                payable(msg.sender).transfer(jackpot);
-            } else {
-                emit ResultETH("rugged", 0);
-            }
-        } else {
-            uint256 randomNumber = rollNumber(20000);
-
-            if (randomNumber == 69) {
-                emit ResultETH("jackpot", jackpot);
-                payable(msg.sender).transfer(jackpot);
-            } else if (randomNumber <= 10000) {
-                emit ResultETH("doubled", potentialWinnings);
-                payable(msg.sender).transfer(potentialWinnings);
-            } else {
-                emit ResultETH("rugged", 0);
-            }
+        if (returnedAmount > 0) {
+            payable(msg.sender).transfer(returnedAmount);
         }
     }
 
@@ -94,35 +117,17 @@ contract BlastJackpot is Ownable {
         // the minimum roll is 0.005 tokens
         require(amountLessFees >= 5 * 10 ** decimals, "Minimum roll is 5 tokens");
 
-        // transfer tokens to contract
-        IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        (uint256 returnedAmount, string memory resultType) = flip(
+            amountLessFees * 2,
+            100000,
+            IERC20(tokenAddress).balanceOf(address(this)),
+            getJackpotERC20(tokenAddress)
+        );
 
-        uint256 potentialWinnings = amountLessFees * 2;
-        uint256 jackpot = getJackpotERC20(tokenAddress);
+        emit ResultERC20(resultType, returnedAmount, tokenAddress);
 
-        if (IERC20(tokenAddress).balanceOf(address(this)) < potentialWinnings) {
-            // we don't have the funds to pay a regular win, so we just try to roll
-            // for a jackpot
-            uint256 randomNumber = rollNumber(10000);
-
-            if (randomNumber == 69) {
-                emit ResultERC20("jackpot", jackpot, tokenAddress);
-                IERC20(tokenAddress).transfer(msg.sender, jackpot);
-            } else {
-                emit ResultERC20("rugged", 0, tokenAddress);
-            }
-        } else {
-            uint256 randomNumber = rollNumber(20000);
-
-            if (randomNumber == 69) {
-                emit ResultERC20("jackpot", jackpot, tokenAddress);
-                IERC20(tokenAddress).transfer(msg.sender, jackpot);
-            } else if (randomNumber <= 10000) {
-                emit ResultERC20("doubled", potentialWinnings, tokenAddress);
-                IERC20(tokenAddress).transfer(msg.sender, potentialWinnings);
-            } else {
-                emit ResultERC20("rugged", 0, tokenAddress);
-            }
+        if (returnedAmount > 0) {
+            IERC20(tokenAddress).transfer(msg.sender, returnedAmount);
         }
     }
 
