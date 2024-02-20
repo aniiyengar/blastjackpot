@@ -92,7 +92,7 @@ contract BlastJackpot is Ownable {
     }
 
     //// MAIN FUNCTIONS //////////////////////////////////////////////////////////
-    constructor() Ownable(msg.sender);
+    constructor() Ownable(msg.sender) { }
 
     function flipETH() payable public {
         uint256 amountLessFees = msg.value * 100 / 105;
@@ -100,8 +100,8 @@ contract BlastJackpot is Ownable {
         // the minimum roll is 0.005 ether
         require(amountLessFees >= 0.005 ether, "Minimum roll is 0.005 ether");
 
-        (returnedAmount, resultType) = flip(
-            potentialWinnings,
+        (uint256 returnedAmount, string memory resultType) = flip(
+            amountLessFees,
             100000,
             address(this).balance,
             getJackpotETH()
@@ -118,9 +118,6 @@ contract BlastJackpot is Ownable {
         require(erc20Whitelist[tokenAddress], "Token not whitelisted");
 
         uint256 amountLessFees = amount * 100 / 105;
-
-        // get decimals for token
-        uint8 decimals = IERC20(tokenAddress).decimals();
 
         require(amountLessFees >= erc20MinBets[tokenAddress], "Paying less than minimum roll");
 
