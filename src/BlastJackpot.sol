@@ -21,6 +21,8 @@ contract BlastJackpot is Ownable {
     //// STATE VARIABLES /////////////////////////////////////////////////////////
     mapping(address => bool) public erc20Whitelist;
 
+    mapping(address => uint256) public erc20MinBets;
+
     //// HELPER FUNCTIONS ////////////////////////////////////////////////////////
     function rollNumber(uint256 maximum) internal view returns (uint256) {
         return uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))) % maximum;
@@ -35,8 +37,14 @@ contract BlastJackpot is Ownable {
     }
 
     //// ADMIN FUNCTIONS /////////////////////////////////////////////////////////
-    function setERC20Whitelist(address tokenAddress, bool status) public onlyOwner {
-        erc20Whitelist[tokenAddress] = status;
+    function addERC20Whitelist(address tokenAddress, uint256 minBet) public onlyOwner {
+        erc20Whitelist[tokenAddress] = true;
+        erc20MinBets[tokenAddress] = minBet;
+    }
+
+    function removeERC20Whitelist(address tokenAddress) public onlyOwner {
+        erc20Whitelist[tokenAddress] = false;
+        erc20MinBets[tokenAddress] = 0;
     }
 
     function withdrawETH(uint256 amount) public onlyOwner {
@@ -114,8 +122,7 @@ contract BlastJackpot is Ownable {
         // get decimals for token
         uint8 decimals = IERC20(tokenAddress).decimals();
 
-        // the minimum roll is 0.005 tokens
-        require(amountLessFees >= 5 * 10 ** decimals, "Minimum roll is 5 tokens");
+        require(amountLessFees >= erc20MinBets[tokenAddress], "Paying less than minimum roll");
 
         (uint256 returnedAmount, string memory resultType) = flip(
             amountLessFees * 2,
